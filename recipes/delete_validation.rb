@@ -17,7 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if not node[:hostname].include?('vagrant')
+if not Chef::Config[:validation_key].nil?
   unless node[:recipes].include?('chef-server')
     file Chef::Config[:validation_key] do
       action :delete

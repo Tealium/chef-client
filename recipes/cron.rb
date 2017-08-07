@@ -3,7 +3,7 @@
 # Author:: Seth Chisamore (<schisamo@opscode.com>)
 # Author:: Bryan Berry (<bryan.berry@gmail.com>)
 # Cookbook Name:: chef-client
-# Recipe:: cron 
+# Recipe:: cron
 #
 # Copyright 2009-2011, Opscode, Inc.
 #
@@ -21,74 +21,75 @@
 #
 
 root_group = value_for_platform(
-                                ["openbsd", "freebsd", "mac_os_x"] => { "default" => "wheel" },
-                                "default" => "root"
-                                )
+  %w[openbsd freebsd mac_os_x] => { 'default' => 'wheel' },
+  'default' => 'root'
+)
 
 # COOK-635 account for alternate gem paths
 # try to use the bin provided by the node attribute
-if ::File.executable?(node["chef_client"]["bin"])
-  client_bin = node["chef_client"]["bin"]
+if ::File.executable?(node['chef_client']['bin'])
+  client_bin = node['chef_client']['bin']
   # search for the bin in some sane paths
-elsif Chef::Client.const_defined?('SANE_PATHS') && (chef_in_sane_path=Chef::Client::SANE_PATHS.map{|p| p="#{p}/chef-client";p if ::File.executable?(p)}.compact.first) && chef_in_sane_path
+elsif Chef::Client.const_defined?('SANE_PATHS') &&
+      (chef_in_sane_path = Chef::Client::SANE_PATHS.map do |p|
+        p = "#{p}/chef-client"
+        p if ::File.executable?(p)
+      end.compact.first) &&
+      chef_in_sane_path
   client_bin = chef_in_sane_path
   # last ditch search for a bin in PATH
-elsif (chef_in_path=%x{which chef-client}.chomp) && ::File.executable?(chef_in_path)
+elsif (chef_in_path = `which chef-client`.chomp) && ::File.executable?(chef_in_path)
   client_bin = chef_in_path
 else
   raise "Could not locate the chef-client bin in any known path. Please set the proper path by overriding node['chef_client']['bin'] in a role."
 end
 
-%w{run_path cache_path backup_path log_dir}.each do |key|
-  directory node["chef_client"][key] do
+%w[run_path cache_path backup_path log_dir].each do |key|
+  directory node['chef_client'][key] do
     recursive true
-    owner "root"
+    owner 'root'
     group root_group
-    mode 0755
+    mode '0755'
   end
 end
 
 dist_dir, conf_dir = value_for_platform(
-                                        ["ubuntu", "debian"] => { "default" => ["debian", "default"] },
-                                        ["redhat", "centos", "fedora", "scientific", "amazon"] => { "default" => ["redhat", "sysconfig"]}
-                                        )
+  %w[ubuntu debian] => { 'default' => %w[debian default] },
+  %w[redhat centos fedora scientific amazon] => { 'default' => %w[redhat sysconfig] }
+)
 
 # let's create the service file so the :disable action doesn't fail
-template "/etc/init.d/chef-client" do
+template '/etc/init.d/chef-client' do
   source "#{dist_dir}/init.d/chef-client.erb"
-  mode 0755
-  variables(
-            :client_bin => client_bin
-            )
+  mode 0o755
+  variables(client_bin: client_bin)
 end
 
 template "/etc/#{conf_dir}/chef-client" do
   source "#{dist_dir}/#{conf_dir}/chef-client.erb"
-  mode 0644
 end
 
-service "chef-client" do
-  supports :status => true, :restart => true
-  action [:disable, :stop]
+service 'chef-client' do
+  supports status: true, restart: true
+  action %i[disable stop]
 end
 
-if node.run_list.roles.include?(node['nagios']['server_role'])
-  cron "chef-client" do
+if node['run_list']['roles'].include?(node['nagios']['server_role'])
+  cron 'chef-client' do
     minute node['chef_client']['cron']['nagios']['minute']
-    hour        node['chef_client']['cron']['nagios']['hour']
+    hour node['chef_client']['cron']['nagios']['hour']
     path node['chef_client']['cron']['path'] if node['chef_client']['cron']['path']
-    user        "root"
-    shell       "/bin/bash"
+    user 'root'
+    shell '/bin/bash'
     command "/bin/sleep `/usr/bin/expr $RANDOM \\% 90` &> /dev/null ; #{client_bin} &> /dev/null "
   end
 else
-  cron "chef-client" do
-    minute node['chef_client']['cron']['minute']	
-    hour	node['chef_client']['cron']['hour']
+  cron 'chef-client' do
+    minute node['chef_client']['cron']['minute']
+    hour node['chef_client']['cron']['hour']
     path node['chef_client']['cron']['path'] if node['chef_client']['cron']['path']
-    user	"root"
-    shell	"/bin/bash"
+    user 'root'
+    shell '/bin/bash'
     command "/bin/sleep `/usr/bin/expr $RANDOM \\% 90` &> /dev/null ; #{client_bin} &> /dev/null "
   end
 end
-

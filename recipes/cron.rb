@@ -74,7 +74,7 @@ service 'chef-client' do
   action %i[disable stop]
 end
 
-if node['run_list']['roles'].include?(node['nagios']['server_role'])
+if node.run_list.roles.include?(node['nagios']['server_role'])
   cron 'chef-client' do
     minute node['chef_client']['cron']['nagios']['minute']
     hour node['chef_client']['cron']['nagios']['hour']

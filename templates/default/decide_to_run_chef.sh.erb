@@ -1,5 +1,4 @@
 #!/bin/bash
-mypid=$$
 (
   if pgrep -fla chef-client; then
     echo $(date) skipping chef run, chef-client is already running

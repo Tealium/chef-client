@@ -1,10 +1,10 @@
 #!/bin/bash
 mypid=$$
 (
-  if pgrep $(basename $0) | grep -vP "^${mypid}|grep|cron|ppid=${mypid}" | grep -q $(basename $0); then
-    echo $(date) Running chef-client
-    /usr/bin/chef-client
+  if pgrep -fla chef-client; then
+    echo $(date) skipping chef run, chef-client is already running
   else
-    echo $(date) skipping chef run, client already running
+    echo $(date) Running chef-client
+    /usr/bin/chef-client > /var/log/tealium/last_chef_run.log
   fi
 ) >> /var/log/tealium/chef_cron.log 2>> /var/log/tealium/chef_cron_err.log

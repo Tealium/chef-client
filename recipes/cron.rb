@@ -74,6 +74,13 @@ service 'chef-client' do
   action %i[disable stop]
 end
 
+template '/usr/local/bin/decide_to_run_chef.sh' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+  action :create
+end
+
 if node.run_list.roles.include?(node['nagios']['server_role'])
   cron 'chef-client' do
     minute node['chef_client']['cron']['nagios']['minute']
@@ -81,7 +88,7 @@ if node.run_list.roles.include?(node['nagios']['server_role'])
     path node['chef_client']['cron']['path'] if node['chef_client']['cron']['path']
     user 'root'
     shell '/bin/bash'
-    command "/bin/sleep `/usr/bin/expr $RANDOM \\% 90` &> /dev/null ; #{client_bin} &> /dev/null "
+    command "/usr/local/bin/decide_to_run_chef.sh &> /dev/null"
   end
 else
   cron 'chef-client' do
@@ -90,6 +97,6 @@ else
     path node['chef_client']['cron']['path'] if node['chef_client']['cron']['path']
     user 'root'
     shell '/bin/bash'
-    command "/bin/sleep `/usr/bin/expr $RANDOM \\% 90` &> /dev/null ; #{client_bin} &> /dev/null "
+    command "/usr/local/bin/decide_to_run_chef.sh &> /dev/null"
   end
 end
